@@ -1,6 +1,6 @@
 // Offline support: serve cached files instantly, refresh them in the background.
 // Bump CACHE when you deploy changes so old caches are cleaned up.
-const CACHE = 'bgb-v7';
+const CACHE = 'bgb-v9';
 const ASSETS = [
   '/', '/styles.css', '/app.js', '/manifest.webmanifest',
   '/icon.svg', '/icon-192.png', '/apple-touch-icon.png', '/favicon-32.png',

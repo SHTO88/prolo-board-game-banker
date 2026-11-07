@@ -88,6 +88,7 @@
           <small id="settle-sub"></small>
         </div>
         <ul id="settle-list" class="list settle-list"></ul>
+        <button id="btn-explain" class="link-btn" type="button" hidden>How was this worked out?</button>
       </section>
     </main>
   </section>
@@ -152,6 +153,17 @@
       </button>
     </div>
     <ul id="history-list" class="history"></ul>
+  </dialog>
+
+  <!-- "How was this worked out?" sheet -->
+  <dialog id="explain" class="sheet tall" aria-labelledby="explain-title">
+    <div class="sheet-head">
+      <h2 id="explain-title">How it settles</h2>
+      <button class="icon-btn close" type="button" data-close aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div id="explain-body" class="explain"></div>
   </dialog>
 
   <!-- Menu sheet -->

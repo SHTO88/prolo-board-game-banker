@@ -80,16 +80,26 @@ function fmt(n) {
 function nets(log = state.log) {
   const n = { [BANK]: 0 };
   for (const p of state.players) n[p.id] = 0;
-  const add = (id, v) => { if (id in n) n[id] += v; };
-  // An in-game payment creates a debt from payer to payee; a settlement reverses it.
-  const owe = (debtor, creditor, amt) => { add(debtor, -amt); add(creditor, amt); };
   for (const e of log) {
-    if (e.k === 'paid') owe(e.to, e.from, e.amt);
-    else if (e.to === 'all') for (const o of e.ids) owe(e.from, o, e.amt);
-    else if (e.from === 'all') for (const o of e.ids) owe(o, e.to, e.amt);
-    else owe(e.from, e.to, e.amt);
+    const d = entryDeltas(e);
+    for (const id in d) if (id in n) n[id] += d[id];
   }
   return n;
+}
+
+/** How one log entry changes each party's net position. */
+function entryDeltas(e) {
+  const d = {};
+  // An in-game payment creates a debt from payer to payee; a settlement reverses it.
+  const owe = (debtor, creditor, amt) => {
+    d[debtor] = (d[debtor] ?? 0) - amt;
+    d[creditor] = (d[creditor] ?? 0) + amt;
+  };
+  if (e.k === 'paid') owe(e.to, e.from, e.amt);
+  else if (e.to === 'all') for (const o of e.ids) owe(e.from, o, e.amt);
+  else if (e.from === 'all') for (const o of e.ids) owe(o, e.to, e.amt);
+  else owe(e.from, e.to, e.amt);
+  return d;
 }
 
 /** Greedy match of largest debtor with largest creditor: at most (parties − 1) payments. */
@@ -249,7 +259,93 @@ function renderSettlements() {
           aria-label="Mark ${esc(nameOf(s.from))} paid ${esc(nameOf(s.to))} ${fmt(s.amt)}">Paid</button>
       </li>`).join('')
     : `<li class="empty">${state.log.length ? 'All square. Nobody owes anything.' : 'Tap a player to record what they pay or receive.'}</li>`;
+  $('#btn-explain').hidden = !list.length;
 }
+
+/** One history entry as seen by party `id`, e.g. "Pays Player 2" or "Gets from Bank". */
+function trailLabel(e, id) {
+  const name = (x) => esc(nameOf(x));
+  if (e.k === 'paid') return e.from === id ? `Settled up with ${name(e.to)}` : `${name(e.from)} settled up`;
+  if (e.to === 'all') return e.from === id ? `Pays everyone ${fmt(e.amt)} each` : `Gets from ${name(e.from)}`;
+  if (e.from === 'all') return e.to === id ? `Gets ${fmt(e.amt)} from everyone` : `Pays ${name(e.to)}`;
+  return e.from === id ? `Pays ${name(e.to)}` : `Gets from ${name(e.from)}`;
+}
+
+const runLabel = (v) => (v < 0 ? `owes ${fmt(-v)}` : v > 0 ? `gets back ${fmt(v)}` : 'square');
+
+/**
+ * Explainer sheet: a tree of who pays whom (each person who owes, branching
+ * to the people they pay), then a tap-to-open trail per person showing how
+ * each history entry moved their total.
+ */
+function renderExplain() {
+  const n = nets();
+  const steps = settlements();
+  const name = (id) => esc(nameOf(id));
+
+  const debtors = [...new Set(steps.map((s) => s.from))];
+  const tree = debtors.map((d) => {
+    const leaves = steps.filter((s) => s.from === d).map((s) => `
+      <li>
+        ${avatar(s.to, 'sm')}
+        <span class="x-main">
+          <span class="name">${name(s.to)}</span>
+          ${s.amt < n[s.to] ? `<span class="x-meta">${fmt(s.amt)} of the ${fmt(n[s.to])} they get back</span>` : ''}
+        </span>
+        <span class="x-amt">${fmt(s.amt)}</span>
+      </li>`).join('');
+    return `
+      <div class="tree">
+        <div class="t-root">
+          ${avatar(d)}
+          <span class="name">${name(d)}</span>
+          <span class="x-owes">owes ${fmt(-n[d])}</span>
+        </div>
+        <ul class="t-branches" aria-label="${name(d)} pays">${leaves}</ul>
+      </div>`;
+  }).join('');
+
+  const trails = [...state.players.map((p) => p.id), BANK].map((id) => {
+    let run = 0;
+    const rows = [];
+    for (const e of state.log) {
+      const d = entryDeltas(e)[id];
+      if (!d) continue;
+      run += d;
+      rows.push(`
+        <li>
+          <span class="t-what">${trailLabel(e, id)}</span>
+          <span class="t-delta ${d < 0 ? 'neg' : 'pos'}">${d > 0 ? '+' : ''}${fmt(d)}</span>
+          <span class="t-run">Now ${runLabel(run)}</span>
+        </li>`);
+    }
+    if (!rows.length) return '';
+    const s = netStatus(n[id]);
+    return `
+      <details class="trail">
+        <summary>
+          ${avatar(id)}
+          <span class="name">${name(id)}</span>
+          <span class="prow-net ${s.cls}">
+            ${s.cls === 'zero' ? '<span class="prow-status">Square</span>'
+              : `<span class="x-amt">${s.amount}</span><span class="prow-status">${s.label}</span>`}
+          </span>
+          ${CHEVRON}
+        </summary>
+        <ol class="t-steps">${rows.join('')}</ol>
+      </details>`;
+  }).join('');
+
+  $('#explain-body').innerHTML = `
+    <p class="x-note">Everyone's money goes into one pot. Each person pays or gets exactly their total, but not always from the person they dealt with in the game.</p>
+    <h3>Who pays whom</h3>
+    ${tree}
+    <h3>How each total adds up</h3>
+    <p class="muted">Tap a name to see every payment, in order.</p>
+    <div class="list">${trails}</div>`;
+}
+
+$('#btn-explain').addEventListener('click', () => { renderExplain(); $('#explain').showModal(); });
 
 $('#players').addEventListener('click', (ev) => {
   const card = ev.target.closest('[data-pid]');

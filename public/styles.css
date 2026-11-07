@@ -213,6 +213,108 @@ circle { fill: currentColor; stroke: none; }
   color: var(--muted); padding: 22px 16px;
 }
 
+.link-btn {
+  display: block;
+  margin: 10px auto 0;
+  padding: 10px 14px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 14px; font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.link-btn:active { background: var(--surface-2); }
+
+/* ---------- Settlement explainer ---------- */
+
+.explain h3 { margin: 20px 0 8px; font-size: 16px; }
+.explain p { margin: 0 0 10px; font-size: 14px; }
+.explain .name { font-weight: 650; overflow-wrap: anywhere; }
+.explain .list { background: var(--bg); }
+.explain { --tree-line: color-mix(in srgb, var(--muted) 60%, transparent); }
+.x-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.x-meta { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.x-amt { font-size: 16px; font-weight: 750; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.x-note {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+
+/* Tree: a person who owes, with a branch to each person they pay. */
+.tree {
+  padding: 12px;
+  border-radius: var(--radius);
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+.tree + .tree { margin-top: 10px; }
+.t-root { display: flex; align-items: center; gap: 10px; }
+.t-root .name { flex: 1; min-width: 0; }
+.x-owes { color: var(--neg); font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* The left edge lines up with the centre of the 42px root avatar. */
+.t-branches { list-style: none; margin: 0 0 0 20px; padding: 0; }
+.t-branches li {
+  position: relative;
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 0 0 26px;
+}
+/* Elbow from the trunk into this branch, ending in an arrowhead. */
+.t-branches li::before {
+  content: "";
+  position: absolute; left: 0; top: 0;
+  width: 20px; height: calc(50% + 4px);
+  border-left: 2px solid var(--tree-line);
+  border-bottom: 2px solid var(--tree-line);
+  border-bottom-left-radius: 10px;
+}
+.t-branches li::after {
+  content: "";
+  position: absolute; left: 18px; top: calc(50% + 4px);
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-left: 6px solid var(--tree-line);
+  border-right: 0;
+}
+/* Trunk continues past this branch to the next one. */
+.t-branches li:not(:last-child) { border-left: 2px solid var(--tree-line); }
+.t-branches li:not(:last-child)::before { left: -2px; }
+.t-branches li:not(:last-child)::after { left: 16px; }
+
+/* Trail: each person's history in order, with a running total. */
+.trail + .trail { border-top: 1px solid var(--line); }
+.trail summary {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 8px 10px 12px;
+  list-style: none;
+  cursor: pointer;
+}
+.trail summary::-webkit-details-marker { display: none; }
+.trail summary .name { flex: 1; min-width: 0; }
+.trail summary .chev { flex: none; width: 18px; height: 18px; color: var(--muted); transition: transform .15s; }
+.trail[open] summary .chev { transform: rotate(90deg); }
+.t-steps { list-style: none; margin: 0; padding: 0 12px 12px 32px; }
+.t-steps li {
+  position: relative;
+  display: grid; grid-template-columns: 1fr auto; column-gap: 8px;
+  padding: 4px 0 10px 18px;
+  border-left: 2px solid var(--tree-line);
+}
+.t-steps li:last-child { border-left-color: transparent; padding-bottom: 0; }
+.t-steps li::before {
+  content: "";
+  position: absolute; left: -7px; top: 6px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--muted);
+}
+.t-what { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.t-delta { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.t-delta.pos { color: var(--pos); }
+.t-delta.neg { color: var(--neg); }
+.t-run { grid-column: 1 / -1; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
 /* ---------- Setup ---------- */
 
 .setup-body { flex: 1; padding: 0 4px; }
