@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://prolo-board-game-banker.YOUR-SUBDOMAIN.workers.dev"><strong>▶ Open the app</strong></a>
+  <a href="https://prolo-board-game-banker.slwrkr.workers.dev"><strong>▶ Open the app</strong></a>
   &nbsp;·&nbsp; Works offline &nbsp;·&nbsp; No sign-up &nbsp;·&nbsp; No ads
 </p>
 
@@ -69,7 +69,7 @@ It installs like an app, with its own icon and full-screen view.
 The app is plain HTML, CSS and JavaScript with no build step. It's served as static assets by a Cloudflare Worker, which fits easily within the free plan.
 
 ```sh
-git clone <this-repo-url>
+git clone https://github.com/SHTO88/prolo-board-game-banker.git
 cd prolo-board-game-banker
 npm install
 npm run dev        # http://localhost:8787
