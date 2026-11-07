@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "prolo-board-game-banker",
+  "compatibility_date": "2026-10-01",
+  // Static-assets-only Worker: no server code needed, all state lives on the device.
+  "assets": {
+    "directory": "./public"
+  }
+}

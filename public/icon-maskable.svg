@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Full-bleed square: iOS and Android apply their own corner mask. Coin stays inside the 80% safe zone. -->
+  <rect width="512" height="512" fill="#0f1115"/>
+  <circle cx="256" cy="256" r="150" fill="#22c55e"/>
+  <circle cx="256" cy="256" r="124" fill="none" stroke="#052e14" stroke-width="9" stroke-dasharray="4 15" stroke-linecap="round" opacity=".35"/>
+  <path d="M194 180H318M194 226H318M208 180H250A46 46 0 0 1 250 272H208L298 345" fill="none" stroke="#052e14" stroke-width="27" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,13 @@
+{
+  "name": "prolo-board-game-banker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Prolo Board Game Banker: mobile banker for board games. Static app served by Cloudflare Workers.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.158.0"
+  }
+}

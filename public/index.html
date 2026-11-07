@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Status bar / browser chrome follows the app's light or dark theme. -->
+  <meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f2f3f6" media="(prefers-color-scheme: light)">
+  <meta name="color-scheme" content="dark light">
+  <title>Prolo Board Game Banker – track who owes whom in Monopoly &amp; board games</title>
+  <meta name="description" content="Prolo Board Game Banker is a free banker app for Monopoly, Business and other money games. Record who pays whom, see who owes how much, and settle up in the fewest payments. Works offline, no sign-up.">
+  <meta name="application-name" content="Prolo Banker">
+
+  <!-- iPhone / iPad "Add to Home Screen" -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Prolo Banker">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+
+  <!-- Link previews (WhatsApp, iMessage, Slack, X) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Prolo Board Game Banker">
+  <meta property="og:title" content="Prolo Board Game Banker – who owes whom, settled in the fewest payments">
+  <meta property="og:description" content="Ditch the paper money. Track payments between players and the bank, then settle up in a few taps.">
+  <meta property="og:image" content="/icon-512.png">
+  <meta name="twitter:card" content="summary">
+
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+
+  <!-- Setup / edit screen -->
+  <section id="setup" class="screen" hidden>
+    <header class="topbar">
+      <button id="setup-back" class="icon-btn" type="button" aria-label="Back to game" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <h1 id="setup-title">New game</h1>
+    </header>
+
+    <div class="setup-body">
+      <h2>Players</h2>
+      <ol id="setup-players" class="player-rows"></ol>
+      <button id="add-player" class="ghost-btn" type="button">+ Add player</button>
+
+      <h2>Currency</h2>
+      <div class="fields">
+        <label class="field small">
+          <span>Symbol</span>
+          <input id="cur" maxlength="3" autocomplete="off">
+        </label>
+      </div>
+    </div>
+
+    <footer class="setup-foot">
+      <button id="setup-go" class="primary-btn" type="button">Start game</button>
+    </footer>
+  </section>
+
+  <!-- Game screen -->
+  <section id="game" class="screen" hidden>
+    <header class="topbar">
+      <h1>Prolo Banker</h1>
+      <button id="btn-history" class="icon-btn" type="button" aria-label="History">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
+      </button>
+      <button id="btn-menu" class="icon-btn" type="button" aria-label="Menu">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+      </button>
+    </header>
+    <main>
+      <section aria-labelledby="players-title">
+        <div class="section-head">
+          <h2 id="players-title">Players</h2>
+          <small>Tap to record a payment</small>
+        </div>
+        <ul id="players" class="list"></ul>
+      </section>
+      <section class="settle" aria-labelledby="settle-title">
+        <div class="section-head">
+          <h2 id="settle-title">Who pays whom</h2>
+          <small id="settle-sub"></small>
+        </div>
+        <ul id="settle-list" class="list settle-list"></ul>
+      </section>
+    </main>
+  </section>
+
+  <!-- Transaction sheet -->
+  <dialog id="tx" class="sheet" aria-labelledby="tx-name">
+    <div class="tx-head">
+      <span id="tx-dot" class="dot"></span>
+      <strong id="tx-name"></strong>
+      <span id="tx-bal" class="muted"></span>
+      <button class="icon-btn close" type="button" data-close aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="seg" role="group" aria-label="Direction">
+      <button type="button" data-dir="pay">Pays</button>
+      <button type="button" data-dir="get">Receives</button>
+    </div>
+
+    <div class="cp-row">
+      <span id="tx-cp-label" class="muted">to</span>
+      <div id="tx-cp" class="chips scroll" role="group" aria-label="Counterparty"></div>
+    </div>
+
+    <div class="amount-row">
+      <output id="tx-amount" class="amount" aria-live="polite"></output>
+      <button id="tx-clear" class="icon-btn" type="button" aria-label="Clear amount">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div id="tx-after" class="after muted"></div>
+
+    <div id="tx-quick" class="chips quick"></div>
+
+    <div id="tx-keys" class="keypad">
+      <button type="button" data-k="1">1</button>
+      <button type="button" data-k="2">2</button>
+      <button type="button" data-k="3">3</button>
+      <button type="button" data-k="4">4</button>
+      <button type="button" data-k="5">5</button>
+      <button type="button" data-k="6">6</button>
+      <button type="button" data-k="7">7</button>
+      <button type="button" data-k="8">8</button>
+      <button type="button" data-k="9">9</button>
+      <button type="button" data-k="00">00</button>
+      <button type="button" data-k="0">0</button>
+      <button type="button" data-k="back" aria-label="Backspace">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 5H9l-6 7 6 7h12z"/><path d="M13 9l5 6M18 9l-5 6"/></svg>
+      </button>
+    </div>
+
+    <button id="tx-go" class="primary-btn" type="button" disabled>Enter amount</button>
+  </dialog>
+
+  <!-- History sheet -->
+  <dialog id="history" class="sheet tall" aria-labelledby="history-title">
+    <div class="sheet-head">
+      <h2 id="history-title">History</h2>
+      <button class="icon-btn close" type="button" data-close aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <ul id="history-list" class="history"></ul>
+  </dialog>
+
+  <!-- Menu sheet -->
+  <dialog id="menu" class="sheet" aria-label="Menu">
+    <div class="menu">
+      <button id="menu-edit" type="button">Edit players</button>
+      <button id="menu-new" type="button">New game</button>
+      <button type="button" data-close class="muted">Cancel</button>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden>
+    <span id="toast-msg"></span>
+    <button id="toast-undo" type="button">Undo</button>
+  </div>
+</body>
+</html>
