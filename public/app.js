@@ -6,8 +6,8 @@
  * Every entry in the log is either an in-game payment ("A pays B ₹N"),
  * which A now owes B, or a settlement ("A settled ₹N with B"), which clears
  * that debt. The Bank is a party like any player. Net positions are
- * recomputed from the log, and the "Who pays whom" list reduces them to the
- * fewest payments that settle everyone. All state lives in localStorage.
+ * recomputed from the log, and the "Who pays whom" list shows what each pair
+ * of people still owe each other. All state lives in localStorage.
  */
 
 const STORE_KEY = 'bgb:v2';
@@ -20,7 +20,7 @@ const PALETTE = [
 const COLORS = PALETTE.map(([c]) => c);
 const MAX_PLAYERS = 8;
 const MIN_PLAYERS = 2;
-const QUICK_AMOUNTS = [50, 100, 500, 1000];
+const QUICK_AMOUNTS = [50, 100, 500, 1000, 5000];
 const BANK = 'bank';
 const BANK_COLOR = '#94a3b8';
 const MAX_DIGITS = 10;
@@ -87,44 +87,53 @@ function nets(log = state.log) {
   return n;
 }
 
+/**
+ * The debts one log entry creates, as [debtor, creditor, amount]. An in-game
+ * payment means the payer owes the payee; a settlement reverses that.
+ */
+function entryDebts(e) {
+  if (e.k === 'paid') return [[e.to, e.from, e.amt]];
+  if (e.to === 'all') return e.ids.map((o) => [e.from, o, e.amt]);
+  if (e.from === 'all') return e.ids.map((o) => [o, e.to, e.amt]);
+  return [[e.from, e.to, e.amt]];
+}
+
 /** How one log entry changes each party's net position. */
 function entryDeltas(e) {
   const d = {};
-  // An in-game payment creates a debt from payer to payee; a settlement reverses it.
-  const owe = (debtor, creditor, amt) => {
+  for (const [debtor, creditor, amt] of entryDebts(e)) {
     d[debtor] = (d[debtor] ?? 0) - amt;
     d[creditor] = (d[creditor] ?? 0) + amt;
-  };
-  if (e.k === 'paid') owe(e.to, e.from, e.amt);
-  else if (e.to === 'all') for (const o of e.ids) owe(e.from, o, e.amt);
-  else if (e.from === 'all') for (const o of e.ids) owe(o, e.to, e.amt);
-  else owe(e.from, e.to, e.amt);
+  }
   return d;
 }
 
-/** Greedy match of largest debtor with largest creditor: at most (parties − 1) payments. */
+/**
+ * Who pays whom, kept between the two people who actually dealt with each
+ * other. Debts are never passed along a chain (A owes B and B owes C stays
+ * two payments); only payments back and forth within one pair cancel out.
+ * Sorted by player order, with the Bank last.
+ */
 function settlements() {
-  const n = nets();
-  const debtors = [];
-  const creditors = [];
-  for (const id of [...state.players.map((p) => p.id), BANK]) {
-    if (n[id] < 0) debtors.push({ id, v: -n[id] });
-    else if (n[id] > 0) creditors.push({ id, v: n[id] });
+  const parties = [...state.players.map((p) => p.id), BANK];
+  const rank = new Map(parties.map((id, i) => [id, i]));
+  // Key "a|b" with a ranked before b; positive = a owes b, negative = b owes a.
+  const pairs = new Map();
+  for (const e of state.log) {
+    for (const [debtor, creditor, amt] of entryDebts(e)) {
+      if (!rank.has(debtor) || !rank.has(creditor) || debtor === creditor) continue;
+      const fwd = rank.get(debtor) < rank.get(creditor);
+      const key = fwd ? `${debtor}|${creditor}` : `${creditor}|${debtor}`;
+      pairs.set(key, (pairs.get(key) ?? 0) + (fwd ? amt : -amt));
+    }
   }
-  debtors.sort((a, b) => b.v - a.v);
-  creditors.sort((a, b) => b.v - a.v);
   const out = [];
-  let i = 0;
-  let j = 0;
-  while (i < debtors.length && j < creditors.length) {
-    const amt = Math.min(debtors[i].v, creditors[j].v);
-    out.push({ from: debtors[i].id, to: creditors[j].id, amt });
-    debtors[i].v -= amt;
-    creditors[j].v -= amt;
-    if (!debtors[i].v) i++;
-    if (!creditors[j].v) j++;
+  for (const [key, v] of pairs) {
+    if (!v) continue;
+    const [a, b] = key.split('|');
+    out.push(v > 0 ? { from: a, to: b, amt: v } : { from: b, to: a, amt: -v });
   }
-  return out;
+  return out.sort((x, y) => rank.get(x.from) - rank.get(y.from) || rank.get(x.to) - rank.get(y.to));
 }
 
 function netStatus(v) {
@@ -285,13 +294,12 @@ function renderExplain() {
 
   const debtors = [...new Set(steps.map((s) => s.from))];
   const tree = debtors.map((d) => {
-    const leaves = steps.filter((s) => s.from === d).map((s) => `
+    const mine = steps.filter((s) => s.from === d);
+    const total = mine.reduce((sum, s) => sum + s.amt, 0);
+    const leaves = mine.map((s) => `
       <li>
         ${avatar(s.to, 'sm')}
-        <span class="x-main">
-          <span class="name">${name(s.to)}</span>
-          ${s.amt < n[s.to] ? `<span class="x-meta">${fmt(s.amt)} of the ${fmt(n[s.to])} they get back</span>` : ''}
-        </span>
+        <span class="x-main"><span class="name">${name(s.to)}</span></span>
         <span class="x-amt">${fmt(s.amt)}</span>
       </li>`).join('');
     return `
@@ -299,7 +307,7 @@ function renderExplain() {
         <div class="t-root">
           ${avatar(d)}
           <span class="name">${name(d)}</span>
-          <span class="x-owes">owes ${fmt(-n[d])}</span>
+          <span class="x-owes">pays ${fmt(total)}</span>
         </div>
         <ul class="t-branches" aria-label="${name(d)} pays">${leaves}</ul>
       </div>`;
@@ -337,7 +345,7 @@ function renderExplain() {
   }).join('');
 
   $('#explain-body').innerHTML = `
-    <p class="x-note">Everyone's money goes into one pot. Each person pays or gets exactly their total, but not always from the person they dealt with in the game.</p>
+    <p class="x-note">Each person pays back the people they dealt with in the game. If two people paid each other, only the difference is paid.</p>
     <h3>Who pays whom</h3>
     ${tree}
     <h3>How each total adds up</h3>
@@ -385,6 +393,14 @@ function openTx(pid) {
 
   renderTx();
   $('#tx').showModal();
+  // Wrap the chips if that fits in two rows; otherwise two rows that scroll sideways.
+  const cpEl = $('#tx-cp');
+  cpEl.classList.add('wrap');
+  const rows = new Set([...cpEl.children].map((c) => c.offsetTop)).size;
+  if (rows > 2) {
+    cpEl.classList.remove('wrap');
+    cpEl.style.setProperty('--cols', Math.ceil(opts.length / 2));
+  }
   $('#tx-cp [aria-pressed="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   $('#tx-go').focus({ preventScroll: true });
 }
@@ -701,10 +717,14 @@ $('#setup-players').addEventListener('click', (ev) => {
 function removeBlockedReason(li) {
   if (setupRows().length <= MIN_PLAYERS) return `A game needs at least ${MIN_PLAYERS} players.`;
   if (setupMode !== 'edit') return '';
-  const v = nets()[li.dataset.id];
-  if (!v) return '';
+  const id = li.dataset.id;
+  const v = nets()[id];
+  // Net zero isn't enough: they may still owe one person and be owed by another.
+  const open = settlements().some((s) => s.from === id || s.to === id);
+  if (!v && !open) return '';
   const input = li.querySelector('input');
   const name = input.value.trim() || input.placeholder;
+  if (!v) return `${name} still has payments to settle. Settle up before removing.`;
   return `${name} ${v < 0 ? 'owes' : 'gets back'} ${fmt(Math.abs(v))}. Settle up before removing.`;
 }
 

@@ -522,7 +522,14 @@ dialog.sheet::backdrop { background: rgb(0 0 0 / .55); }
 
 .cp-row { display: flex; align-items: center; gap: 10px; }
 .cp-row > .muted { flex: none; width: 36px; font-size: 14px; }
-.cp-row .chips { flex: 1; }
+.cp-row .chips { flex: 1; min-width: 0; }
+/* openTx() picks: .wrap when the chips fit in two wrapped rows, else a 2-row grid (--cols) that scrolls. */
+#tx-cp {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 99), max-content);
+  justify-items: start; /* keep each chip its own width instead of stretching to the column */
+}
+#tx-cp.wrap { display: flex; flex-wrap: wrap; }
 
 .amount-row {
   display: flex; align-items: center; justify-content: center;
@@ -541,8 +548,13 @@ dialog.sheet::backdrop { background: rgb(0 0 0 / .55); }
 .after { text-align: center; font-size: 14px; min-height: 20px; font-variant-numeric: tabular-nums; }
 .after.neg { color: var(--neg); }
 
-.chips.quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 10px 0; }
+.chips.quick { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 10px 0; }
 .chips.quick .chip { justify-content: center; padding: 8px 2px; font-size: 14px; min-width: 0; }
+/* Small phones (iPhone SE 1st gen and similar): keep five buttons on one row. */
+@media (max-width: 374px) {
+  .chips.quick { gap: 4px; }
+  .chips.quick .chip { font-size: 12px; letter-spacing: -0.01em; }
+}
 
 .keypad {
   display: grid;

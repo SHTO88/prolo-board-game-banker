@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Ditch the paper money.</strong> A free mobile banker app for Monopoly, Business, The Game of Life and any other board game with money.<br>
-  Record who pays whom, see who owes how much, and settle up in the fewest payments.
+  Record who pays whom, see who owes how much, and settle up with the people you dealt with.
 </p>
 
 <p align="center">
@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/1-players.png" width="240" alt="Players list showing who owes and who gets back, with the fewest payments to settle up">
+  <img src="docs/screenshots/1-players.png" width="240" alt="Players list showing who owes and who gets back, with the payments to settle up">
   &nbsp;
   <img src="docs/screenshots/2-record-payment.png" width="240" alt="Recording a payment: Arjun pays Bank ₹1,000 using the keypad and quick amount buttons">
   &nbsp;
@@ -28,8 +28,8 @@ In money-based board games, someone has to play banker, keep track of loans, ren
 
 ## Features
 
-- **Who pays whom.** All debts, including the Bank's, are reduced to the fewest payments: never more than one fewer than the number of parties. Tap **Paid** when the money changes hands.
-- **Fast entry.** Tap a player, choose **Pays** or **Receives**, pick the Bank, another player or **Everyone**, and enter the amount on a big keypad or with +₹50 / +₹100 / +₹500 / +₹1,000 buttons.
+- **Who pays whom.** Each person pays back the people they dealt with, including the Bank. Debts are never passed along to a third person; if two people paid each other, only the difference is paid. Tap **Paid** when the money changes hands.
+- **Fast entry.** Tap a player, choose **Pays** or **Receives**, pick the Bank, another player or **Everyone**, and enter the amount on a big keypad or with +₹50 / +₹100 / +₹500 / +₹1,000 / +₹5,000 buttons.
 - **Bank included.** The Bank is a party like any player and is selected by default.
 - **Pay everyone at once.** "Vidhi pays everyone ₹100 each" is one entry.
 - **Clear net position.** Each player shows how much they owe or get back overall.
@@ -62,7 +62,7 @@ It installs like an app, with its own icon and full-screen view.
 
 1. **Start a game.** Enter player names, or leave them blank for "Player 1", "Player 2" and so on. The last game's players are pre-filled for a rematch.
 2. **Record payments as they happen.** For example, "Arjun pays Bank ₹1,500" or "Vani receives ₹2,000 from Bank". Nothing has to be paid on the spot; the app keeps a running tally.
-3. **Settle up.** The **Who pays whom** list shows the fewest payments needed. For example, if Vani owes Sourabh ₹200 and Sourabh owes Vidhi ₹200, it shows a single payment: Vani pays Vidhi ₹200.
+3. **Settle up.** The **Who pays whom** list shows what each pair of people still owe each other. For example, if Vani owes Sourabh ₹200 and Sourabh owes Vidhi ₹200, it shows both payments: Vani pays Sourabh ₹200 and Sourabh pays Vidhi ₹200. If Sourabh also owes Vani ₹50, Vani pays Sourabh only ₹150.
 
 ## Self-host on Cloudflare Workers
 
