@@ -802,5 +802,30 @@ if (state.players.length) showGame();
 else openSetup('new');
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  // iOS keeps a home-screen app suspended instead of reloading it, so check for
+  // a new version every time the app comes back to the foreground.
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') reg.update().catch(() => {});
+      });
+    }).catch(() => {});
+  });
+
+  // When a new version takes over, reload to show it. Wait if a sheet is open
+  // so an entry in progress isn't lost. Skip on first install (no old version).
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  let reloadPending = false;
+  const reloadIfIdle = () => {
+    if (reloadPending && !document.querySelector('dialog[open]') && $('#setup').hidden) location.reload();
+  };
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloadPending) return;
+    reloadPending = true;
+    reloadIfIdle();
+  });
+  // 'close' doesn't bubble, so listen in the capture phase for any sheet closing.
+  document.addEventListener('close', reloadIfIdle, true);
+  // Also catch leaving the setup screen (Start game / Back), which isn't a sheet.
+  new MutationObserver(reloadIfIdle).observe($('#setup'), { attributes: true, attributeFilter: ['hidden'] });
 }
