@@ -520,6 +520,30 @@ dialog.sheet::backdrop { background: rgb(0 0 0 / .55); }
 }
 .seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgb(0 0 0 / .25); }
 
+/* Owes vs Pays on the entry sheet: each mode has its own colour so the two can't be mixed up. */
+#tx { --owe: #dc2626; --pay: #16a34a; --mode: var(--owe); --mode-on: #fff; }
+#tx.mode-pay { --mode: var(--pay); }
+#tx.mode-owe, #tx.mode-pay { box-shadow: inset 0 5px 0 var(--mode); }
+#tx .seg button {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  padding: 8px 6px;
+}
+.seg-title { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; }
+.seg-title svg { width: 18px; height: 18px; }
+.seg-title circle { fill: none; stroke: currentColor; }
+.seg-sub { font-size: 11px; font-weight: 600; opacity: .8; }
+#tx .seg button[data-dir="owe"][aria-pressed="true"],
+#tx .seg button[data-dir="pay"][aria-pressed="true"] {
+  background: var(--mode);
+  color: var(--mode-on);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--mode) 45%, transparent);
+}
+#tx .amount:not(.empty) { color: var(--mode); }
+@media (prefers-color-scheme: dark) {
+  #tx .amount:not(.empty) { color: color-mix(in srgb, var(--mode) 70%, #fff); }
+}
+#tx #tx-go:not(:disabled) { background: var(--mode); color: var(--mode-on); }
+
 .cp-row { display: flex; align-items: center; gap: 10px; }
 .cp-row > .muted { flex: none; width: 36px; font-size: 14px; }
 .cp-row .chips { flex: 1; min-width: 0; }

@@ -1,7 +1,7 @@
 // Offline support: always try the network first so an installed app picks up
 // new versions straight away, and fall back to the cached copy when offline
 // or the network is too slow. Bump CACHE when you deploy so old caches are cleaned up.
-const CACHE = 'bgb-v13';
+const CACHE = 'bgb-v15';
 const ASSETS = [
   '/', '/styles.css', '/app.js', '/manifest.webmanifest',
   '/icon.svg', '/icon-192.png', '/apple-touch-icon.png', '/favicon-32.png',

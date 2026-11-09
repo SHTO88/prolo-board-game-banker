@@ -3,9 +3,9 @@
 /*
  * Prolo Board Game Banker: who owes how much to whom.
  *
- * Every entry in the log is either an in-game payment ("A pays B ₹N"),
- * which A now owes B, or a settlement ("A settled ₹N with B"), which clears
- * that debt. The Bank is a party like any player. Net positions are
+ * Every entry in the log is either a debt ("A owes B ₹N") or money actually
+ * handed over ("A pays B ₹N", stored with k: 'paid'), which cancels what A
+ * owed B. The Bank is a party like any player. Net positions are
  * recomputed from the log, and the "Who pays whom" list shows what each pair
  * of people still owe each other. All state lives in localStorage.
  */
@@ -47,7 +47,8 @@ function save() {
 
 let state = load();
 let undoSnapshot = null;
-let tx = null; // open entry: { pid, dir: 'pay'|'get', cp: 'bank'|'all'|playerId, amt: string }
+// open entry: { pid, dir: 'owe' (records a debt) | 'pay' (money handed over), cp: 'bank'|'all'|playerId, amt: string }
+let tx = null;
 const lastCp = {}; // remembers each player's last counterparty for this session
 let setupMode = 'new';
 
@@ -92,10 +93,12 @@ function nets(log = state.log) {
  * payment means the payer owes the payee; a settlement reverses that.
  */
 function entryDebts(e) {
-  if (e.k === 'paid') return [[e.to, e.from, e.amt]];
-  if (e.to === 'all') return e.ids.map((o) => [e.from, o, e.amt]);
-  if (e.from === 'all') return e.ids.map((o) => [o, e.to, e.amt]);
-  return [[e.from, e.to, e.amt]];
+  let debts;
+  if (e.to === 'all') debts = e.ids.map((o) => [e.from, o, e.amt]);
+  else if (e.from === 'all') debts = e.ids.map((o) => [o, e.to, e.amt]);
+  else debts = [[e.from, e.to, e.amt]];
+  // Money handed over runs the other way: it cancels what the payer owed.
+  return e.k === 'paid' ? debts.map(([a, b, amt]) => [b, a, amt]) : debts;
 }
 
 /** How one log entry changes each party's net position. */
@@ -181,11 +184,12 @@ function buzz() {
 
 // ---------- Entries ----------
 
+/** "Owes" entries record a debt; "paid" entries record money actually handed over. */
 function describe(e) {
-  if (e.k === 'paid') return `${nameOf(e.from)} settled ${fmt(e.amt)} with ${nameOf(e.to)}`;
-  if (e.to === 'all') return `${nameOf(e.from)} pays everyone ${fmt(e.amt)} each`;
-  if (e.from === 'all') return `Everyone pays ${nameOf(e.to)} ${fmt(e.amt)} each`;
-  return `${nameOf(e.from)} pays ${nameOf(e.to)} ${fmt(e.amt)}`;
+  const verb = e.k === 'paid' ? 'paid' : 'owes';
+  if (e.to === 'all') return `${nameOf(e.from)} ${verb} everyone ${fmt(e.amt)} each`;
+  if (e.from === 'all') return `Everyone ${e.k === 'paid' ? 'paid' : 'owes'} ${nameOf(e.to)} ${fmt(e.amt)} each`;
+  return `${nameOf(e.from)} ${verb} ${nameOf(e.to)} ${fmt(e.amt)}`;
 }
 
 function commit(entry) {
@@ -271,13 +275,15 @@ function renderSettlements() {
   $('#btn-explain').hidden = !list.length;
 }
 
-/** One history entry as seen by party `id`, e.g. "Pays Player 2" or "Gets from Bank". */
+/** One history entry as seen by party `id`, e.g. "Owes Player 2" or "Paid by Bank". */
 function trailLabel(e, id) {
   const name = (x) => esc(nameOf(x));
-  if (e.k === 'paid') return e.from === id ? `Settled up with ${name(e.to)}` : `${name(e.from)} settled up`;
-  if (e.to === 'all') return e.from === id ? `Pays everyone ${fmt(e.amt)} each` : `Gets from ${name(e.from)}`;
-  if (e.from === 'all') return e.to === id ? `Gets ${fmt(e.amt)} from everyone` : `Pays ${name(e.to)}`;
-  return e.from === id ? `Pays ${name(e.to)}` : `Gets from ${name(e.from)}`;
+  const paid = e.k === 'paid';
+  const sent = (to) => (paid ? `Paid ${to}` : `Owes ${to}`);
+  const got = (from) => (paid ? `Paid by ${from}` : `${from} owes them`);
+  if (e.to === 'all') return e.from === id ? sent(`everyone ${fmt(e.amt)} each`) : got(name(e.from));
+  if (e.from === 'all') return e.to === id ? got('everyone') : sent(name(e.to));
+  return e.from === id ? sent(name(e.to)) : got(name(e.from));
 }
 
 const runLabel = (v) => (v < 0 ? `owes ${fmt(-v)}` : v > 0 ? `gets back ${fmt(v)}` : 'square');
@@ -378,7 +384,7 @@ function openTx(pid) {
   const remembered = lastCp[pid];
   // Default to the Bank unless this player last dealt with someone still in the game.
   const cp = remembered === 'all' || opp.some((p) => p.id === remembered) ? remembered : BANK;
-  tx = { pid, dir: 'pay', cp, amt: '' };
+  tx = { pid, dir: 'owe', cp, amt: '' };
 
   const opts = [{ id: BANK, label: 'Bank', color: BANK_COLOR }]
     .concat(opp.map((p) => ({ id: p.id, label: p.name, color: p.color })));
@@ -418,10 +424,13 @@ function renderTx() {
   for (const b of document.querySelectorAll('#tx .seg button')) {
     b.setAttribute('aria-pressed', String(b.dataset.dir === tx.dir));
   }
+  // Colours the whole sheet (top strip, amount, confirm button): red for a debt, green for money handed over.
+  $('#tx').classList.toggle('mode-owe', tx.dir === 'owe');
+  $('#tx').classList.toggle('mode-pay', tx.dir === 'pay');
   for (const b of document.querySelectorAll('#tx-cp .chip')) {
     b.setAttribute('aria-pressed', String(b.dataset.cp === tx.cp));
   }
-  $('#tx-cp-label').textContent = tx.dir === 'pay' ? 'to' : 'from';
+
 
   const out = $('#tx-amount');
   out.textContent = fmt(amt);
@@ -430,7 +439,8 @@ function renderTx() {
 
   const count = tx.cp === 'all' ? others(tx.pid).length : 1;
   const total = amt * count;
-  const after = netStatus(net + (tx.dir === 'pay' ? -total : total));
+  // Owing more lowers their total; paying money over raises it back.
+  const after = netStatus(net + (tx.dir === 'owe' ? -total : total));
   const afterEl = $('#tx-after');
   afterEl.textContent = amt
     ? `${count > 1 ? `Total ${fmt(total)} · ` : ''}${p.name} then ${after.cls === 'zero' ? 'is settled' : `${after.label} ${after.amount}`}`
@@ -442,9 +452,7 @@ function renderTx() {
   const each = tx.cp === 'all' ? ' each' : '';
   go.textContent = !amt
     ? 'Enter amount'
-    : tx.dir === 'pay'
-      ? `${p.name} pays ${tx.cp === 'all' ? 'everyone' : nameOf(tx.cp)} ${fmt(amt)}${each}`
-      : `${p.name} receives ${fmt(amt)}${each} from ${tx.cp === 'all' ? 'everyone' : nameOf(tx.cp)}`;
+    : `${p.name} ${tx.dir === 'owe' ? 'owes' : 'pays'} ${tx.cp === 'all' ? 'everyone' : nameOf(tx.cp)} ${fmt(amt)}${each}`;
 }
 
 function pressKey(k) {
@@ -457,7 +465,9 @@ function confirmTx() {
   const amt = Number(tx.amt) || 0;
   if (!amt) return;
   const e = { id: uid(), t: Date.now(), amt };
-  if (tx.dir === 'pay') { e.from = tx.pid; e.to = tx.cp; } else { e.from = tx.cp; e.to = tx.pid; }
+  e.from = tx.pid;
+  e.to = tx.cp;
+  if (tx.dir === 'pay') e.k = 'paid';
   if (tx.cp === 'all') e.ids = others(tx.pid).map((p) => p.id);
   lastCp[tx.pid] = tx.cp;
   $('#tx').close();
@@ -508,9 +518,9 @@ function renderHistory() {
     return;
   }
   list.innerHTML = state.log.slice().reverse().map((e) => {
-    const verb = e.k === 'paid' ? 'settled with' : 'pays';
+    const verb = e.k === 'paid' ? 'paid' : 'owes';
     const who = `${esc(nameOf(e.from))} ${verb} ${esc(nameOf(e.to))}`;
-    const meta = (e.k === 'paid' ? 'Settlement · ' : '') + timeLabel(e.t);
+    const meta = (e.k === 'paid' ? 'Money handed over · ' : '') + timeLabel(e.t);
     const amt = e.ids
       ? `${fmt(e.amt)}<small>each · ${fmt(e.amt * e.ids.length)}</small>`
       : fmt(e.amt);

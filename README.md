@@ -17,9 +17,9 @@
 <p align="center">
   <img src="docs/screenshots/1-players.png" width="240" alt="Players list showing who owes and who gets back, with the payments to settle up">
   &nbsp;
-  <img src="docs/screenshots/2-record-payment.png" width="240" alt="Recording a payment: Arjun pays Bank ₹1,000 using the keypad and quick amount buttons">
+  <img src="docs/screenshots/2-record-payment.png" width="240" alt="Recording money handed over: Arjun pays Bank ₹400, with the green Pays mode selected">
   &nbsp;
-  <img src="docs/screenshots/3-history.png" width="240" alt="History of every payment with delete">
+  <img src="docs/screenshots/3-history.png" width="240" alt="History of every debt and payment, with delete">
 </p>
 
 ## Why
@@ -29,9 +29,9 @@ In money-based board games, someone has to play banker, keep track of loans, ren
 ## Features
 
 - **Who pays whom.** Each person pays back the people they dealt with, including the Bank. Debts are never passed along to a third person; if two people paid each other, only the difference is paid. Tap **Paid** when the money changes hands.
-- **Fast entry.** Tap a player, choose **Pays** or **Receives**, pick the Bank, another player or **Everyone**, and enter the amount on a big keypad or with +₹50 / +₹100 / +₹500 / +₹1,000 / +₹5,000 buttons.
+- **Fast entry.** Tap a player, choose **Owes** (records a debt) or **Pays** (money actually handed over, which reduces what they owe), pick the Bank, another player or **Everyone**, and enter the amount on a big keypad or with +₹50 / +₹100 / +₹500 / +₹1,000 / +₹5,000 buttons.
 - **Bank included.** The Bank is a party like any player and is selected by default.
-- **Pay everyone at once.** "Vidhi pays everyone ₹100 each" is one entry.
+- **Everyone at once.** "Vidhi owes everyone ₹100 each" is one entry.
 - **Clear net position.** Each player shows how much they owe or get back overall.
 - **Undo anything.** Every action has Undo, and History lets you delete any past entry. Totals are always recalculated from the full log, so they stay correct.
 - **Rupees by default.** ₹ with Indian digit grouping (₹1,50,000). Change the symbol to $, €, £ or anything else.
@@ -61,7 +61,7 @@ It installs like an app, with its own icon and full-screen view.
 ## How a game works
 
 1. **Start a game.** Enter player names, or leave them blank for "Player 1", "Player 2" and so on. The last game's players are pre-filled for a rematch.
-2. **Record payments as they happen.** For example, "Arjun pays Bank ₹1,500" or "Vani receives ₹2,000 from Bank". Nothing has to be paid on the spot; the app keeps a running tally.
+2. **Record payments as they happen.** For example, "Arjun owes Bank ₹1,500". Nothing has to be paid on the spot; the app keeps a running tally. When money does change hands, record it with **Pays**: "Arjun pays Bank ₹1,000" leaves him owing ₹500.
 3. **Settle up.** The **Who pays whom** list shows what each pair of people still owe each other. For example, if Vani owes Sourabh ₹200 and Sourabh owes Vidhi ₹200, it shows both payments: Vani pays Sourabh ₹200 and Sourabh pays Vidhi ₹200. If Sourabh also owes Vani ₹50, Vani pays Sourabh only ₹150.
 
 ## Self-host on Cloudflare Workers

@@ -105,8 +105,20 @@
     </div>
 
     <div class="seg" role="group" aria-label="Direction">
-      <button type="button" data-dir="pay">Pays</button>
-      <button type="button" data-dir="get">Receives</button>
+      <button type="button" data-dir="owe">
+        <span class="seg-title">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+          Owes
+        </span>
+        <span class="seg-sub">Adds a debt</span>
+      </button>
+      <button type="button" data-dir="pay">
+        <span class="seg-title">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>
+          Pays
+        </span>
+        <span class="seg-sub">Money handed over</span>
+      </button>
     </div>
 
     <div class="cp-row">
